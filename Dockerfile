@@ -1,5 +1,6 @@
-FROM php:8.1-apache
+FROM php:8.1-cli
 
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libonig-dev \
@@ -7,26 +8,24 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     git \
-    curl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+# Install PHP extensions
+RUN docker-php-ext-install pdo_mysql mbstring bcmath gd
 
-RUN a2enmod rewrite
-
-# I-set ang Apache port nang direkta sa 80
-RUN sed -i 's/80/80/g' /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf
-RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
-
+# Set working directory
 WORKDIR /var/www/html
 COPY . .
 
+# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-RUN composer install --no-interaction --optimize-autoloader --no-dev
+RUN composer install --no-dev --optimize-autoloader
 
+# Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# I-expose ang port 80
-EXPOSE 80
+# Expose port 8080
+EXPOSE 8080
 
-CMD php artisan migrate --force && apache2-foreground
+# Start server
+CMD php artisan migrate --force && php -S 0.0.0.0:8080 -t public
