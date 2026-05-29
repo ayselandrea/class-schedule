@@ -31,8 +31,14 @@ else
     echo "APP_KEY already set, keeping existing key"
 fi
 
-# Storage link
+# Storage link — remove directory first so storage:link can create a real symlink
+if [ -d /var/www/html/public/storage ] && [ ! -L /var/www/html/public/storage ]; then
+    rm -rf /var/www/html/public/storage
+    echo "Removed public/storage directory to recreate as symlink"
+fi
+mkdir -p /var/www/html/storage/app/public/avatars
 php artisan storage:link --force 2>/dev/null || true
+echo "Storage link ready"
 
 # Cache config (non-fatal)
 php artisan config:cache 2>/dev/null || true
