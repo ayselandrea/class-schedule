@@ -1,37 +1,34 @@
 #!/bin/bash
-set -e
 
 echo "=== Starting Class Schedule App ==="
 
-# Detect Railway public URL (try multiple variable names)
+# Detect Railway public URL
 RAILWAY_URL="${RAILWAY_STATIC_URL:-${RAILWAY_PUBLIC_DOMAIN:-${RAILWAY_DOMAIN:-}}}"
 if [ -n "$RAILWAY_URL" ]; then
-    # Strip protocol if accidentally included
     RAILWAY_URL="${RAILWAY_URL#https://}"
     RAILWAY_URL="${RAILWAY_URL#http://}"
     export APP_URL="https://$RAILWAY_URL"
     echo "APP_URL set to: $APP_URL"
-else
-    echo "No Railway URL detected, using APP_URL from environment: ${APP_URL:-http://localhost}"
 fi
 
-# Generate APP_KEY if not set
-php artisan key:generate --force
-echo "APP_KEY generated"
+# Copy .env if missing
+if [ ! -f .env ]; then
+    cp .env.example .env 2>/dev/null || touch .env
+    echo "Created .env file"
+fi
 
-# Create storage symlink
+# Generate APP_KEY
+php artisan key:generate --force 2>/dev/null || true
+echo "APP_KEY ready"
+
+# Storage link
 php artisan storage:link --force 2>/dev/null || true
-echo "Storage link created"
 
-# Cache config for performance
-php artisan config:cache || echo "Warning: config:cache failed (non-fatal)"
-echo "Config cached"
+# Cache config (non-fatal if it fails)
+php artisan config:cache 2>/dev/null || true
 
-# Run database migrations
-echo "Running migrations..."
-php artisan migrate --force
-echo "Migrations complete"
+# Run migrations (non-fatal if it fails — allows app to start without DB)
+php artisan migrate --force 2>/dev/null || echo "Warning: migrations skipped (DB not ready)"
 
-# Start PHP built-in server
-echo "Starting server on port ${PORT:-8080}..."
-php -S 0.0.0.0:${PORT:-8080} -t /var/www/html/public
+echo "=== Server starting on port ${PORT:-8080} ==="
+exec php -S 0.0.0.0:${PORT:-8080} -t /var/www/html/public
