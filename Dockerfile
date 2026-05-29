@@ -14,8 +14,8 @@ RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
 RUN a2enmod rewrite
 
-# I-set ang Apache na makinig sa PORT environment variable ng Railway
-RUN sed -i 's/80/${PORT:-80}/g' /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf
+# I-set ang Apache port nang direkta sa 80
+RUN sed -i 's/80/80/g' /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf
 RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
 WORKDIR /var/www/html
@@ -26,7 +26,7 @@ RUN composer install --no-interaction --optimize-autoloader --no-dev
 
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# I-expose ang port na ibibigay ng Railway
-EXPOSE ${PORT:-80}
+# I-expose ang port 80
+EXPOSE 80
 
 CMD php artisan migrate --force && apache2-foreground
